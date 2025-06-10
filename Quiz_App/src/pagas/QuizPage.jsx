@@ -1,118 +1,145 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 export const QuizPage = () => {
-    const { isLoding, isError, data } = useSelector((state) => state?.quizes);
-    const [quations, setquations] = useState([]);
-    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [curruntQuation, setcurruntQuation] = useState(null);
-    const [answers, setanswers] = useState([]);
-    const [selectedAnswers, setSelectedAnswers] = useState([]); 
-    const [score, setScore] = useState(0); 
+  const navigate = useNavigate();
+  const { isLoding, isError, data } = useSelector((state) => state?.quizes);
+  const [questions, setQuestions] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [answers, setAnswers] = useState([]);
+  const [selectedAnswers, setSelectedAnswers] = useState([]);
+  const [score, setScore] = useState(0);
 
-    const handleNext = () => {
-        if (currentQuestionIndex < quations.length - 1) {
-            setCurrentQuestionIndex(currentQuestionIndex + 1);
-        }
-    };
+// console.log("ans", currentQuestion?.correct_answer)
+// console.log("score",score)
 
-    const handlePrev = () => {
-        if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(currentQuestionIndex - 1);
-        }
-    };
-
-    const handleResult = (clickedIndex) => {
-        const selectedAnswer = answers[clickedIndex];
-
-        const updatedSelectedAnswers = [...selectedAnswers];
-        updatedSelectedAnswers[currentQuestionIndex] = clickedIndex;
-        setSelectedAnswers(updatedSelectedAnswers);
-        if (curruntQuation?.correct_answer === selectedAnswer && updatedSelectedAnswers[currentQuestionIndex] !== clickedIndex) {
-            console.log("Correct Answer!");
-            setScore(prevScore => prevScore + 1); 
-        } else {
-            console.log("Incorrect Answer.");
-        }
-    };
-
-    useEffect(() => {
-        setcurruntQuation(quations[currentQuestionIndex]);
-    }, [currentQuestionIndex, quations]);
-
-    useEffect(() => {
-        if (data?.results) {
-            setquations(data.results);
-            setcurruntQuation(data.results[0]);
-        }
-    }, [data]);
-
-    useEffect(() => {
-        if (curruntQuation) {
-            const { correct_answer, incorrect_answers } = curruntQuation;
-            if (incorrect_answers) {
-                const allAnswers = [...incorrect_answers, correct_answer].sort(() => Math.random() - 0.5); 
-                setanswers(allAnswers);
-            }
-        }
-    }, [curruntQuation]);
-
-    if (isLoding) {
-        return <div>Loading...</div>;
+  const handleNext = () => {
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
     }
+  };
 
-    if (isError) {
-        return <div>Error fetching quizzes. Please refresh the page...</div>;
+  const handlePrev = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
     }
+  };
 
-    return (
-        <div className="p-6 max-w-xl mx-auto bg-white shadow-lg rounded-lg">
-            <div className='flex justify-between'>
-                <h2 className="text-lg font-bold mb-4">{curruntQuation?.category}</h2>
-                <p>{currentQuestionIndex + 1}/{quations.length}</p>
-            </div>
-            <p className="text-gray-700 mb-6">{currentQuestionIndex + 1}. {curruntQuation?.question}</p>
+  const handleResult = (clickedIndex) => {
+  const selectedAnswer = answers[clickedIndex];
+  const updatedSelectedAnswers = [...selectedAnswers];
+  updatedSelectedAnswers[currentIndex] = clickedIndex;
+  setSelectedAnswers(updatedSelectedAnswers);
 
-            <ul className="space-y-2 mb-6">
-                {answers?.map((answer, index) => (
-                    <li key={index} className="bg-gray-100 p-2 rounded cursor-pointer hover:bg-gray-200">
-                        <button
-                            onClick={() => handleResult(index)}
-                            className={`w-full text-left p-2
-                            ${selectedAnswers[currentQuestionIndex] === index
-                                    ? curruntQuation?.correct_answer === answer
-                                        ? 'bg-green-200'  
-                                        : 'bg-red-200'    
-                                    : ''
-                                }`}
-                            disabled={selectedAnswers[currentQuestionIndex] !== undefined} 
-                        >
-                            {answer}
-                        </button>
-                    </li>
-                ))}
-            </ul>
+  const isCorrect = currentQuestion?.correct_answer === selectedAnswer;
 
-            <div className="flex justify-between">
-                <button
-                    onClick={handlePrev}
-                    className={`px-4 py-2 rounded-md bg-blue-500 text-white ${currentQuestionIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={currentQuestionIndex === 0}
-                >
-                    Prev
-                </button>
-                <button
-                    onClick={handleNext}
-                    className={`px-4 py-2 rounded-md bg-blue-500 text-white ${currentQuestionIndex === quations.length - 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={currentQuestionIndex === quations.length - 1}
-                >
-                    Next
-                </button>
-            </div>
+  const updatedScore = isCorrect ? score + 1 : score;
+  setScore(updatedScore);
 
-            <div className="mt-4">
-                <p>Your Score: {score}</p>
-            </div>
+  // Last question — show result
+  if (currentIndex === questions.length - 1) {
+    setTimeout(() => {
+      navigate('/leaderboard', {
+        state: {
+          userName: data?.userName,
+          score: updatedScore, 
+          totalScore: questions.length,
+        },
+      });
+    }, 1000);
+  }
+};
+
+
+  useEffect(() => {
+    setCurrentQuestion(questions[currentIndex]);
+  }, [currentIndex, questions]);
+
+  useEffect(() => {
+    if (data?.results) {
+      setQuestions(data.results);
+      setCurrentQuestion(data.results[0]);
+    }
+  }, [data]);
+
+  useEffect(() => {
+    if (currentQuestion) {
+      const { correct_answer, incorrect_answers } = currentQuestion;
+      const allAnswers = [...incorrect_answers, correct_answer].sort(() => Math.random() - 0.5);
+      setAnswers(allAnswers);
+    }
+  }, [currentQuestion]);
+
+  if (isLoding) return <div className="text-center mt-10">Loading...</div>;
+  if (isError) return <div className="text-center mt-10 text-red-600">Error fetching quiz. Please refresh.</div>;
+
+  return (
+    <div className="min-h-screen p-4 flex items-center justify-center bg-gray-100">
+      <div className="w-full max-w-3xl bg-white rounded-lg shadow-lg p-6 sm:p-8">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-pink-600">{currentQuestion?.category}</h2>
+          <span className="text-sm text-gray-600">{currentIndex + 1} / {questions.length}</span>
         </div>
-    );
+
+        {/* Question */}
+        <p className="text-lg font-semibold text-gray-800 mb-6">
+          {currentIndex + 1}. {currentQuestion?.question}
+        </p>
+
+        {/* Answers */}
+        <ul className="space-y-3 mb-6">
+          {answers.map((answer, index) => {
+            const isSelected = selectedAnswers[currentIndex] === index;
+            const isCorrect = currentQuestion?.correct_answer === answer;
+
+            let bgColor = 'bg-gray-100';
+            if (isSelected) {
+              bgColor = isCorrect ? 'bg-green-200' : 'bg-red-200';
+            }
+
+            return (
+              <li key={index}>
+                <button
+                  className={`w-full text-left px-4 py-2 rounded-lg  ${bgColor} hover:border hover:border-pink-400 transition duration-200`}
+                  onClick={() => handleResult(index)}
+                  disabled={selectedAnswers[currentIndex] !== undefined}
+                >
+                  {answer}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        {/* Navigation Buttons */}
+        <div className="flex justify-between">
+          <button
+            onClick={handlePrev}
+            disabled={currentIndex === 0}
+            className={`px-5 py-2 rounded-md text-white transition duration-200 ${
+              currentIndex === 0
+                ? 'bg-blue-300 cursor-not-allowed'
+                : 'bg-blue-500 hover:bg-blue-600'
+            }`}
+          >
+            Prev
+          </button>
+          <button
+            onClick={handleNext}
+            disabled={currentIndex === questions.length - 1}
+            className={`px-5 py-2 rounded-md text-white transition duration-200 ${
+              currentIndex === questions.length - 1
+                ? 'bg-blue-300 cursor-not-allowed'
+                : 'bg-blue-500 hover:bg-blue-600'
+            }`}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };

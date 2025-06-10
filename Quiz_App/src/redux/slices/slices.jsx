@@ -5,19 +5,19 @@ import { setData } from "../../utils/setData";
 const initialState = {
     isLoding : false,
     isError : false,
-    data : []
+    data : [],
+    userName : ""
 }
 
 
 
 
 
-export const getData = createAsyncThunk("GET_DATA", async ({numOfQuesiton,catagory,difficulty})=>{
+export const getData = createAsyncThunk("GET_DATA", async ({numOfQuesiton,catagory,difficulty,userName})=>{
     
     try {
         const res = await axios.get(`https://opentdb.com/api.php?amount=${numOfQuesiton}&category=${catagory}&difficulty=${difficulty}&type=multiple`)
-        console.log(res);
-        return res.data
+        return {...res.data,userName}
     } catch (error) {
         console.log(error);
         
@@ -41,6 +41,7 @@ const quizeSlise = createSlice({
         })
 
         bulder.addCase(getData.fulfilled , (state,action)=>{
+            console.log(action.payload)
             state.isLoding = false
             state.data = action.payload
         })

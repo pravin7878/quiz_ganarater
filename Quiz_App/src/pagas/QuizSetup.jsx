@@ -1,108 +1,133 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { useDispatch ,useSelector} from 'react-redux'
-import { getData } from '../redux/slices/slices'
-import { useNavigate } from 'react-router-dom'
-import { Button, ButtonGroup, Spinner } from '@chakra-ui/react'
+import React, { useRef, useState } from 'react';
+import {
+  Box,
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+  Select,
+  Heading,
+  Text,
+  VStack,
+  Spinner,
+  useToast,
+} from '@chakra-ui/react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { getData } from '../redux/slices/slices';
 
 export const QuizSetup = () => {
-  const dispatch = useDispatch()
-  const nevigate = useNavigate()
-  const nameRef = useRef(null)
-  const catagoryRef = useRef(null)
-  const dificultyRef = useRef(null)
-  const numOfQRef = useRef(null)
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const nameRef = useRef(null);
+  const categoryRef = useRef(null);
+  const difficultyRef = useRef(null);
+  const questionCountRef = useRef(null);
+  const toast = useToast();
 
-  const [formStatus, setformStatus] = useState(null)
-  const isLoading = useSelector((state)=>state.quizes.isLoding)
-  
-  // https://opentdb.com/api.php?amount=10&category=21&difficulty=hard&type=multiple
+  const isLoading = useSelector((state) => state.quizes.isLoding);
+  const [formError, setFormError] = useState(false);
 
-  const hendelSubmit = (e) => {
-    e.preventDefault()
-    const name = nameRef.current.value
-    const catagory = +catagoryRef.current.value
-    const difficulty = dificultyRef.current.value
-    const numOfQuesiton = +numOfQRef.current.value
-    console.log(name, catagory, difficulty, numOfQuesiton);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const name = nameRef.current.value.trim();
+    const category = +categoryRef.current.value;
+    const difficulty = difficultyRef.current.value;
+    const numOfQuestions = +questionCountRef.current.value;
 
-    if (!name || !catagory || !difficulty || !numOfQuesiton) {
-      setformStatus(false)
+    if (!name || !category || !difficulty || !numOfQuestions) {
+      setFormError(true);
+      toast({
+        title: 'Please fill out all fields.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
     }
-    else {
-      setformStatus(true)
 
-      dispatch(getData({numOfQuesiton, catagory, difficulty}))
+    setFormError(false);
 
-      nameRef.current.value = ""
-      catagoryRef.current.value = ""
-      dificultyRef.current.value = ""
-      numOfQRef.current.value = ""
+    dispatch(getData({ numOfQuesiton: numOfQuestions, catagory: category, difficulty, userName: name }));
 
-      setTimeout(()=>{
-        nevigate("/quiz")
-      },1000)
-    }
-  }
-  
-// useEffect(()=>{
-//   dispatch(getData())
-// },[])
-return (
-  <div className='w-[50%] m-auto p-10 flex justify-center flex-col items-center'>
-    <h3 className='text-lg font-bold'>Set up Your Quiz</h3>
-    
-    <form
-      className='p-8 gap-6 w-full flex flex-col bg-white shadow-lg rounded-lg max-w-lg mx-auto'
-      onSubmit={hendelSubmit}
+    toast({
+      title: 'Quiz is loading...',
+      status: 'success',
+      duration: 1000,
+      isClosable: true,
+    });
+
+    setTimeout(() => {
+      navigate('/quiz');
+    }, 1000);
+  };
+
+  return (
+    <Box
+      w="full"
+      minH="100vh"
+      bg="gray.50"
+      px={4}
+      py={10}
+      display="flex"
+      justifyContent="center"
+      alignItems="center"
     >
-      <p style={{color : formStatus ? "green" : "red"}}>{formStatus ? "Form is Submited" : "All Field are Requre" }</p>
-      <input
-        type="text"
-        placeholder='Enter Your Name'
-        className="p-3 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500"
-        ref={nameRef}
-      />
-
-      <select
-        className="p-3 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500"
-        ref={catagoryRef}
+      <Box
+        w={{ base: "100%", sm: "90%", md: "70%", lg: "40%" }}
+        bg="white"
+        p={{ base: 6, md: 10 }}
+        rounded="xl"
+        boxShadow="lg"
       >
-        <option value="0">Select Category</option>
-        <option value="9">General Knowledge</option>
-        <option value="21">Sports</option>
-        <option value="22">Geography</option>
-      </select>
+        <Heading fontSize="2xl" mb={6} color="#F50157" textAlign="center">
+          Set up Your Quiz
+        </Heading>
 
-      <select
-        className="p-3 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500"
-        ref={dificultyRef}
-      >
-        <option value="">Select Difficulty</option>
-        <option value="easy">Easy</option>
-        <option value="medium">Medium</option>
-        <option value="hard">Hard</option>
-      </select>
+        <form onSubmit={handleSubmit}>
+          <VStack spacing={4} align="stretch">
+            <FormControl isRequired isInvalid={formError && !nameRef.current?.value}>
+              <FormLabel>Enter Your Name</FormLabel>
+              <Input placeholder="John Doe" ref={nameRef} />
+            </FormControl>
 
-      <input
-        type="number"
-        placeholder='Enter number of Questions'
-        className="p-3 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500"
-        ref={numOfQRef}
-      />
+            <FormControl isRequired isInvalid={formError && categoryRef.current?.value === "0"}>
+              <FormLabel>Select Category</FormLabel>
+              <Select placeholder="Select Category" ref={categoryRef}>
+                <option value="9">General Knowledge</option>
+                <option value="21">Sports</option>
+                <option value="22">Geography</option>
+              </Select>
+            </FormControl>
 
-      {isLoading ? 
-        <button className='font-bold  p-3 rounded-md cursor-pointer border-2 border-[#F50157] transition-colors'>
-        <Spinner color='red.500' /> 
-      </button>
-      :
-      <input
-        type="submit"
-        value="START QUIZ"
-        className="bg-[#F50157] font-bold text-white p-3 rounded-md cursor-pointer hover:bg-[#cc1a58] transition-colors"
-      ></input>
-      }
-    </form>
+            <FormControl isRequired isInvalid={formError && !difficultyRef.current?.value}>
+              <FormLabel>Select Difficulty</FormLabel>
+              <Select placeholder="Select Difficulty" ref={difficultyRef}>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </Select>
+            </FormControl>
 
-  </div>
-)
-}
+            <FormControl isRequired isInvalid={formError && !questionCountRef.current?.value}>
+              <FormLabel>Number of Questions</FormLabel>
+              <Input type="number" placeholder="5" ref={questionCountRef} min="1" max="50" />
+            </FormControl>
+
+            <Button
+              type="submit"
+              colorScheme="pink"
+              bg="#F50157"
+              _hover={{ bg: "#cc1a58" }}
+              w="full"
+              isLoading={isLoading}
+              spinner={<Spinner size="sm" />}
+            >
+              {isLoading ? 'Loading...' : 'Start Quiz'}
+            </Button>
+          </VStack>
+        </form>
+      </Box>
+    </Box>
+  );
+};
